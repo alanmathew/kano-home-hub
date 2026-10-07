@@ -756,3 +756,37 @@ After that:
 **BME280 Temperature / Humidity / Pressure Sensor**
 
 And we'll build each feature as a small, understandable lesson.
+
+---
+
+# 🎨 Modern Dashboard Design
+
+The Home Hub now uses a lightweight modern touchscreen interface designed specifically for the Kano's 1280×800 display.
+
+The design uses:
+
+- large touch-friendly cards
+- local SVG icons
+- glass-style panels
+- high-contrast typography
+- responsive layouts
+- no heavy JavaScript framework
+
+This keeps the Raspberry Pi 3 responsive while still making the Home Hub feel like a finished smart-home product.
+
+The dashboard code is separated into:
+
+```text
+templates/home.html
+static/css/dashboard.css
+static/js/dashboard.js
+```
+
+The photo screensaver is integrated directly into the dashboard. After three minutes of inactivity, local family photos begin playing full-screen and change every 15 seconds. Touching the display returns to Home.
+
+For a child-friendly explanation of the code, see:
+
+```text
+docs/01-home-hub-basics.md
+docs/architecture.md
+```
