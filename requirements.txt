@@ -1,0 +1,10 @@
+Flask==3.1.2
+
+# Future sensor support
+# adafruit-circuitpython-bme280
+
+# Future API calls for weather
+# requests
+
+# Future environment configuration
+# python-dotenv
