@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+# Never commit family photos
+static/photos/*
+!static/photos/.gitkeep
+
+# Local application data
+data/*.db
