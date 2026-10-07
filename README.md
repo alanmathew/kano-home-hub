@@ -331,6 +331,24 @@ The application will eventually start automatically when the Kano boots.
 
 ---
 
+# ▶️ Run the Home Hub Locally
+
+From the project directory, start the Flask development server:
+
+```bash
+python3 app.py
+```
+
+The app listens on port **6001**. Open this address on the same computer:
+
+```text
+http://localhost:6001
+```
+
+To open it from another device on the same network, use the network address printed by Flask, such as `http://10.0.0.98:6001`.
+
+---
+
 # 🗂 Planned Project Structure
 
 ```text

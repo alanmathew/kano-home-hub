@@ -25,7 +25,7 @@ Flask is a small Python web framework.
 When we open:
 
 ```text
-http://localhost:5000
+http://localhost:6001
 ```
 
 Flask sends the Home Hub page to the browser.
