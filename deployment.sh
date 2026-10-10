@@ -11,9 +11,13 @@ echo "========================================"
 echo "  Kano Home Hub Deployment"
 echo "========================================"
 echo "Target: ${PI_USER}@${PI_HOST}"
+echo "Enter the Pi's SSH password when prompted."
 echo
 
-ssh "${PI_USER}@${PI_HOST}" bash -s <<'REMOTE'
+ssh \
+    -o PreferredAuthentications=keyboard-interactive,password \
+    -o NumberOfPasswordPrompts=3 \
+    "${PI_USER}@${PI_HOST}" bash -s <<'REMOTE'
 set -euo pipefail
 
 REPO_URL="https://github.com/alanmathew/kano-home-hub.git"
@@ -62,7 +66,7 @@ fi
 
 echo
 echo "==> Deployment complete"
-echo "==> Open on Kano: http://localhost:5000"
+echo "==> Open on Kano: http://localhost:6001"
 REMOTE
 
 echo
