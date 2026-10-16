@@ -2,6 +2,7 @@ Flask==3.1.2
 
 adafruit-blinka
 adafruit-circuitpython-bme280
+RPi.GPIO
 
 # Future API calls for weather
 # requests
