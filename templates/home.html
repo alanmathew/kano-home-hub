@@ -23,7 +23,7 @@
         </section>
 
         <section class="status-grid">
-            <button class="metric-card temperature-card" type="button">
+            <button class="metric-card temperature-card" id="temperatureCard" type="button" aria-label="Temperature. Open seven-day history">
                 <div class="icon-badge icon-temperature" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M14 14.76V5a4 4 0 0 0-8 0v9.76a6 6 0 1 0 8 0ZM10 3a2 2 0 0 1 2 2v10.72l.5.3a4 4 0 1 1-5 0l.5-.3V5a2 2 0 0 1 2-2Zm-1 5h2v7.1a2.5 2.5 0 1 1-2 0V8Z"/></svg>
                 </div>
@@ -34,7 +34,7 @@
                 </div>
             </button>
 
-            <button class="metric-card humidity-card" type="button">
+            <button class="metric-card humidity-card" id="humidityCard" type="button" aria-label="Humidity. Open seven-day history">
                 <div class="icon-badge icon-humidity" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M12 2.5s7 7.03 7 12.17A7 7 0 1 1 5 14.67C5 9.53 12 2.5 12 2.5Zm0 3.08c-2.03 2.28-5 6.1-5 9.09a5 5 0 1 0 10 0c0-2.99-2.97-6.81-5-9.09Z"/></svg>
                 </div>
@@ -158,6 +158,27 @@
             <div id="screensaverDate">---</div>
         </div>
         <div class="screensaver-hint">Touch anywhere to return home</div>
+    </section>
+
+    <section class="history-overlay" id="historyOverlay" hidden>
+        <div class="history-panel" id="historyPanel" role="dialog" aria-modal="true" aria-labelledby="historyTitle" tabindex="-1">
+            <header class="history-header">
+                <div>
+                    <span class="feature-kicker" id="historyRangeLabel">LAST 7 DAYS</span>
+                    <h2 id="historyTitle">Sensor history</h2>
+                </div>
+                <button class="history-close" id="historyClose" type="button" aria-label="Close history">Close</button>
+            </header>
+            <div class="history-ranges" role="group" aria-label="History time range">
+                <button class="history-range" type="button" data-range="24h" aria-pressed="false">24 hours</button>
+                <button class="history-range active" type="button" data-range="7d" aria-pressed="true">7 days</button>
+            </div>
+            <p class="history-status" id="historyStatus" role="status">Loading history…</p>
+            <svg class="history-chart" id="historyChart" viewBox="0 0 600 280" role="img" aria-labelledby="historyTitle historyDescription">
+                <desc id="historyDescription">Sensor readings recorded during the last seven days.</desc>
+            </svg>
+            <p class="history-note">Readings are saved every 5 minutes while the dashboard is open.</p>
+        </div>
     </section>
 
     <script id="photoData" type="application/json">{{ photos | tojson }}</script>

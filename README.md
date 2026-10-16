@@ -216,6 +216,12 @@ temperature and humidity cards read the BME280 every 15 seconds. If the sensor
 is not detected, the cards show an unavailable status and the Flask log explains
 what to check.
 
+Tap the Temperature or Humidity card to view its history graph. Choose **24
+hours** or **7 days** to change the displayed time range. The app stores one
+reading every five minutes while the dashboard is open, retaining up to seven
+days of readings. History starts accumulating when the sensor integration is
+deployed; it does not include readings from before that time.
+
 ---
 
 # 🌬 Future Air Quality Sensors

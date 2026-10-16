@@ -44,7 +44,7 @@ Current modules:
 - Photos
 - Settings
 
-The temperature and humidity cards read the BME280 over I2C through the `/api/sensors` endpoint. The dashboard refreshes these readings every 15 seconds. If the sensor cannot be detected, the cards show an unavailable status and Flask logs the reason.
+The temperature and humidity cards read the BME280 over I2C through the `/api/sensors` endpoint. The dashboard refreshes these readings every 15 seconds and stores one reading every five minutes while open in a local SQLite database, retaining up to seven days. Tapping either card opens a graph with 24-hour and seven-day ranges. If the sensor cannot be detected, the cards show an unavailable status and Flask logs the reason.
 
 ## Photo screensaver
 
