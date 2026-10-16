@@ -1,5 +1,6 @@
 const IDLE_MS = 3 * 60 * 1000;
 const PHOTO_MS = 15 * 1000;
+const SENSOR_REFRESH_MS = 15 * 1000;
 
 const photos = JSON.parse(document.getElementById("photoData").textContent || "[]");
 const screensaver = document.getElementById("screensaver");
@@ -42,6 +43,32 @@ function updateClock() {
     else if (hour < 17) greeting = "Good afternoon";
 
     document.getElementById("greeting").textContent = greeting;
+}
+
+async function updateSensorReadings() {
+    const temperature = document.getElementById("temperature");
+    const humidity = document.getElementById("humidity");
+    const temperatureState = document.getElementById("temperatureState");
+    const humidityState = document.getElementById("humidityState");
+
+    try {
+        const response = await fetch("/api/sensors", { cache: "no-store" });
+        const readings = await response.json();
+        if (!response.ok) {
+            throw new Error(readings.error || "Sensor request failed");
+        }
+
+        temperature.textContent = `${readings.temperature_f.toFixed(1)}°F`;
+        humidity.textContent = `${readings.humidity.toFixed(1)}%`;
+        temperatureState.textContent = "Live reading";
+        humidityState.textContent = "Live reading";
+    } catch (error) {
+        console.error("Unable to update sensor readings:", error);
+        temperature.textContent = "--°F";
+        humidity.textContent = "--%";
+        temperatureState.textContent = "Sensor unavailable";
+        humidityState.textContent = "Check wiring and I2C";
+    }
 }
 
 function photoUrl(name) {
@@ -101,4 +128,6 @@ screensaver.addEventListener("click", stopScreensaver);
 
 updateClock();
 setInterval(updateClock, 1000);
+updateSensorReadings();
+setInterval(updateSensorReadings, SENSOR_REFRESH_MS);
 resetIdleTimer();

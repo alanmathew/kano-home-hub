@@ -180,6 +180,42 @@ Python
 Home Hub Dashboard
 ```
 
+## Connect the BME280 to the Pi 3
+
+Power off the Pi before connecting the sensor. Use the **physical pin numbers** on
+the 40-pin header:
+
+| BME280 breakout pin | Raspberry Pi 3 pin | Pi GPIO |
+|---|---:|---|
+| `VCC` or `VIN` | 1 | 3.3V |
+| `GND` | 6 | Ground |
+| `SDA` or `SDI` | 3 | GPIO 2 / SDA |
+| `SCL` or `SCK` | 5 | GPIO 3 / SCL |
+
+Use 3.3V for power. Raspberry Pi GPIO pins are **not 5V tolerant**. Check the
+labels on your breakout board before connecting it.
+
+Enable I2C if it is not already enabled:
+
+```bash
+sudo raspi-config
+```
+
+Choose **Interface Options → I2C → Enable**, then reboot if prompted. Install
+the I2C scan utility and confirm the sensor appears at address `76` or `77`:
+
+```bash
+sudo apt update
+sudo apt install -y i2c-tools
+i2cdetect -y 1
+```
+
+Deploy the app after wiring the sensor. The deployment script installs the
+Python dependencies from `requirements.txt` and restarts the Home Hub. The
+temperature and humidity cards read the BME280 every 15 seconds. If the sensor
+is not detected, the cards show an unavailable status and the Flask log explains
+what to check.
+
 ---
 
 # 🌬 Future Air Quality Sensors

@@ -44,7 +44,7 @@ Current modules:
 - Photos
 - Settings
 
-The sensor cards currently show placeholders. The BME280 integration will replace temperature and humidity placeholders with real readings.
+The temperature and humidity cards read the BME280 over I2C through the `/api/sensors` endpoint. The dashboard refreshes these readings every 15 seconds. If the sensor cannot be detected, the cards show an unavailable status and Flask logs the reason.
 
 ## Photo screensaver
 

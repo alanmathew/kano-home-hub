@@ -1,10 +1,13 @@
 from pathlib import Path
 
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, jsonify, render_template, send_from_directory
+
+from sensors.bme280 import BME280Sensor, SensorUnavailableError
 
 app = Flask(__name__)
 
 PHOTO_DIR = Path.home() / "Pictures" / "PhotoFrame"
+sensor = None
 
 
 @app.route("/")
@@ -19,6 +22,19 @@ def home():
         )
 
     return render_template("home.html", photos=photos)
+
+
+@app.route("/api/sensors")
+def sensor_readings():
+    global sensor
+
+    try:
+        if sensor is None:
+            sensor = BME280Sensor()
+        return jsonify(sensor.read())
+    except SensorUnavailableError as error:
+        app.logger.warning("BME280 unavailable: %s", error)
+        return jsonify(error=str(error)), 503
 
 
 @app.route("/family-photos/<path:filename>")

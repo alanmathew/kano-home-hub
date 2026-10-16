@@ -1,7 +1,7 @@
 Flask==3.1.2
 
-# Future sensor support
-# adafruit-circuitpython-bme280
+adafruit-blinka
+adafruit-circuitpython-bme280
 
 # Future API calls for weather
 # requests
