@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f3f5f7">
     <title>Kano Home Hub</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css', v=2) }}">
 </head>
 <body>
     <main class="app-shell" id="appShell">
@@ -58,14 +58,14 @@
         </section>
 
         <section class="feature-grid">
-            <button class="feature-card weather-card" type="button">
+            <button class="feature-card weather-card" id="weatherButton" type="button" aria-label="Open weather and location settings">
                 <div class="feature-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.7-9.95A6.5 6.5 0 0 1 18.64 9.5 4.25 4.25 0 0 1 18.75 18H7Zm0-2h11.75a2.25 2.25 0 1 0-.95-4.29l-1.22.57-.19-1.33A4.5 4.5 0 0 0 7.4 10l-.1.01-.95.11A3 3 0 0 0 7 16ZM5 4h2v2H5V4Zm-3 5h3v2H2V9Zm4.93-4.49 1.42-1.42 1.4 1.4L8.34 5.91 6.93 4.51Z"/></svg>
                 </div>
                 <div>
-                    <span class="feature-kicker">OUTSIDE</span>
-                    <strong>Weather</strong>
-                    <span class="feature-detail">Forecast & alerts</span>
+                    <span class="feature-kicker" id="weatherLocation">OUTSIDE</span>
+                    <strong id="weatherCardTemperature">Weather</strong>
+                    <span class="feature-detail" id="weatherCardSummary">Choose a city and state</span>
                 </div>
             </button>
 
@@ -181,7 +181,45 @@
         </div>
     </section>
 
+    <section class="weather-overlay" id="weatherOverlay" hidden>
+        <div class="weather-panel" role="dialog" aria-modal="true" aria-labelledby="weatherTitle" tabindex="-1" id="weatherPanel">
+            <header class="weather-header">
+                <div>
+                    <span class="feature-kicker">OUTSIDE</span>
+                    <h2 id="weatherTitle">Weather forecast</h2>
+                    <p id="weatherSelectedLocation" class="weather-location"></p>
+                </div>
+                <button class="weather-close" id="weatherClose" type="button">Close</button>
+            </header>
+
+            <form class="location-search" id="locationSearchForm">
+                <label for="locationQuery">Choose a U.S. city and state</label>
+                <div class="location-search-row">
+                    <input id="locationQuery" name="location" type="search" placeholder="e.g. Boston, Massachusetts" autocomplete="off" required>
+                    <button type="submit" id="locationSearchButton">Search</button>
+                </div>
+                <div id="locationResults" class="location-results" role="listbox" aria-label="Matching U.S. cities" hidden></div>
+                <button type="button" id="saveLocationButton" disabled>Use selected city</button>
+            </form>
+
+            <p class="weather-status" id="weatherStatus" role="status">Search for a city and state to see its forecast.</p>
+            <section id="currentWeather" class="current-weather" hidden aria-label="Current conditions">
+                <div class="current-temperature" id="currentTemperature"></div>
+                <div class="current-condition" id="currentCondition"></div>
+                <div class="weather-facts">
+                    <div><span>Feels like</span><strong id="feelsLike"></strong></div>
+                    <div><span>Humidity</span><strong id="outsideHumidity"></strong></div>
+                    <div><span>Wind</span><strong id="windSpeed"></strong></div>
+                    <div><span>Rain now</span><strong id="currentRain"></strong></div>
+                </div>
+            </section>
+            <h3 class="forecast-heading" id="forecastHeading" hidden>5-day forecast</h3>
+            <div class="forecast-list" id="forecastList"></div>
+            <p class="weather-attribution">Forecast by Open-Meteo</p>
+        </div>
+    </section>
+
     <script id="photoData" type="application/json">{{ photos | tojson }}</script>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js', v=2) }}"></script>
 </body>
 </html>

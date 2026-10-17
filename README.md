@@ -259,16 +259,13 @@ AIR QUALITY
 
 Indoor measurements will come from our physical sensors.
 
-Outdoor information will come from an Internet weather service.
+The OUTSIDE card uses Open-Meteo to show current conditions and a five-day
+forecast. Open the card, search for a U.S. city and state, and save a result;
+the chosen location is stored locally with the Home Hub data. The view includes
+temperature, feels-like temperature, humidity, wind, rain, daily high and low,
+and precipitation chance. Weather updates require Internet access on the Pi.
 
-Examples:
-
-- Outside temperature
-- Forecast
-- Rain
-- Humidity
-- Air Quality Index
-- Severe weather alerts
+This teaches how computers communicate with **APIs**.
 
 This teaches how computers communicate with **APIs**.
 

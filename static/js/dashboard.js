@@ -15,11 +15,54 @@ const historyDescription = document.getElementById("historyDescription");
 const historyClose = document.getElementById("historyClose");
 const historyRangeLabel = document.getElementById("historyRangeLabel");
 const historyRangeButtons = [...document.querySelectorAll(".history-range")];
+const weatherButton = document.getElementById("weatherButton");
+const weatherOverlay = document.getElementById("weatherOverlay");
+const weatherPanel = document.getElementById("weatherPanel");
+const weatherClose = document.getElementById("weatherClose");
+const locationSearchForm = document.getElementById("locationSearchForm");
+const locationQuery = document.getElementById("locationQuery");
+const locationResults = document.getElementById("locationResults");
+const saveLocationButton = document.getElementById("saveLocationButton");
+const weatherStatus = document.getElementById("weatherStatus");
+const currentWeather = document.getElementById("currentWeather");
+const forecastHeading = document.getElementById("forecastHeading");
+const forecastList = document.getElementById("forecastList");
 const HISTORY_RANGES = {
     "24h": { seconds: 24 * 60 * 60, label: "LAST 24 HOURS", ticks: 6 },
     "7d": { seconds: 7 * 24 * 60 * 60, label: "LAST 7 DAYS", ticks: 7 }
 };
 const SVG_NS = "http://www.w3.org/2000/svg";
+const WEATHER_CACHE_MS = 15 * 60 * 1000;
+const WEATHER_CODES = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Freezing fog",
+    51: "Light drizzle",
+    53: "Drizzle",
+    55: "Heavy drizzle",
+    56: "Freezing drizzle",
+    57: "Heavy freezing drizzle",
+    61: "Light rain",
+    63: "Rain",
+    65: "Heavy rain",
+    66: "Freezing rain",
+    67: "Heavy freezing rain",
+    71: "Light snow",
+    73: "Snow",
+    75: "Heavy snow",
+    77: "Snow grains",
+    80: "Light rain showers",
+    81: "Rain showers",
+    82: "Heavy rain showers",
+    85: "Snow showers",
+    86: "Heavy snow showers",
+    95: "Thunderstorm",
+    96: "Thunderstorm with hail",
+    99: "Thunderstorm with heavy hail"
+};
 
 let idleTimer = null;
 let photoTimer = null;
@@ -27,6 +70,14 @@ let photoIndex = 0;
 let screensaverActive = false;
 let historyTrigger = null;
 let selectedHistoryRange = "7d";
+let selectedWeatherLocation = null;
+let weatherTrigger = null;
+let weatherCache = null;
+let weatherCacheTime = 0;
+let searchedLocations = [];
+let selectedLocationCandidate = null;
+let locationSearchTimer = null;
+let locationSearchRequest = 0;
 
 function updateClock() {
     const now = new Date();
@@ -85,6 +136,198 @@ async function updateSensorReadings() {
         temperatureState.textContent = "Sensor unavailable";
         humidityState.textContent = "Check wiring and I2C";
     }
+}
+
+function weatherDescription(code) {
+    return WEATHER_CODES[code] || "Conditions unavailable";
+}
+
+function setWeatherCardLocation(location) {
+    const label = location ? location.label : "OUTSIDE";
+    document.getElementById("weatherLocation").textContent = label;
+    document.getElementById("weatherCardTemperature").textContent = location ? "--°F" : "Weather";
+    document.getElementById("weatherCardSummary").textContent = location
+        ? "Tap for local forecast"
+        : "Choose a city and state";
+    document.getElementById("weatherSelectedLocation").textContent = location ? location.label : "";
+}
+
+function renderWeather(forecast) {
+    const current = forecast.current;
+    const conditions = weatherDescription(current.weather_code);
+    const currentTemperature = Math.round(current.temperature_f);
+    document.getElementById("currentTemperature").textContent = `${currentTemperature}°F`;
+    document.getElementById("currentCondition").textContent = conditions;
+    document.getElementById("feelsLike").textContent = `${Math.round(current.feels_like_f)}°F`;
+    document.getElementById("outsideHumidity").textContent = `${Math.round(current.humidity)}%`;
+    document.getElementById("windSpeed").textContent = `${Math.round(current.wind_mph)} mph`;
+    document.getElementById("currentRain").textContent = `${current.precipitation_in.toFixed(2)} in`;
+    currentWeather.hidden = false;
+    forecastHeading.hidden = false;
+    forecastList.replaceChildren();
+
+    forecast.forecast.forEach((day, index) => {
+        const date = new Date(`${day.date}T12:00:00`);
+        const row = document.createElement("div");
+        row.className = "forecast-row";
+        const dayName = index === 0
+            ? "Today"
+            : date.toLocaleDateString([], { weekday: "short" });
+        const values = [
+            ["span", "forecast-day", dayName],
+            ["span", "forecast-condition", weatherDescription(day.weather_code)],
+            [
+                "span",
+                "forecast-precip",
+                `${day.precipitation_probability == null ? "--" : `${day.precipitation_probability}%`} rain`
+            ],
+            ["strong", "", `${Math.round(day.high_f)}°`],
+            ["span", "forecast-low", `${Math.round(day.low_f)}°`]
+        ];
+        values.forEach(([tag, className, text]) => {
+            const element = document.createElement(tag);
+            if (className) element.className = className;
+            element.textContent = text;
+            row.appendChild(element);
+        });
+        forecastList.appendChild(row);
+    });
+
+    document.getElementById("weatherCardTemperature").textContent = `${currentTemperature}°F`;
+    document.getElementById("weatherCardSummary").textContent = `${conditions} · ${forecast.location.label}`;
+    weatherStatus.textContent = "Current conditions and 5-day forecast";
+}
+
+async function loadWeatherForecast(forceRefresh = false) {
+    if (!selectedWeatherLocation) {
+        weatherStatus.textContent = "Search for a city and state to see its forecast.";
+        return;
+    }
+    if (!forceRefresh && weatherCache && Date.now() - weatherCacheTime < WEATHER_CACHE_MS) {
+        renderWeather(weatherCache);
+        return;
+    }
+
+    weatherStatus.textContent = "Loading forecast…";
+    try {
+        const response = await fetch("/api/weather/forecast", { cache: "no-store" });
+        const forecast = await response.json();
+        if (!response.ok) throw new Error(forecast.error || "Weather request failed");
+        weatherCache = forecast;
+        weatherCacheTime = Date.now();
+        renderWeather(forecast);
+    } catch (error) {
+        console.error("Unable to load weather forecast:", error);
+        weatherStatus.textContent = "Weather is unavailable. Check the Pi’s internet connection and try again.";
+    }
+}
+
+async function loadSavedWeatherLocation() {
+    try {
+        const response = await fetch("/api/weather/location", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Unable to load saved location");
+        selectedWeatherLocation = data.location;
+        setWeatherCardLocation(selectedWeatherLocation);
+        if (selectedWeatherLocation) loadWeatherForecast();
+    } catch (error) {
+        console.error("Unable to load saved weather location:", error);
+        setWeatherCardLocation(null);
+    }
+}
+
+function clearWeatherLocationResults() {
+    locationSearchRequest += 1;
+    searchedLocations = [];
+    selectedLocationCandidate = null;
+    saveLocationButton.disabled = true;
+    locationResults.replaceChildren();
+    locationResults.hidden = true;
+}
+
+async function searchWeatherLocations(query) {
+    const requestId = ++locationSearchRequest;
+    weatherStatus.textContent = "Searching U.S. cities…";
+    try {
+        const response = await fetch(`/api/weather/locations?q=${encodeURIComponent(query)}`, {
+            cache: "no-store"
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Location search failed");
+        if (requestId !== locationSearchRequest) return;
+
+        searchedLocations = data.results;
+        locationResults.replaceChildren();
+        searchedLocations.forEach((location, index) => {
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className = "location-result";
+            option.setAttribute("role", "option");
+            option.setAttribute("aria-selected", "false");
+            option.textContent = location.label;
+            option.addEventListener("click", () => {
+                selectedLocationCandidate = location;
+                locationResults.querySelectorAll(".location-result").forEach((result) => {
+                    const isSelected = result === option;
+                    result.classList.toggle("selected", isSelected);
+                    result.setAttribute("aria-selected", String(isSelected));
+                });
+                saveLocationButton.disabled = false;
+                weatherStatus.textContent = `${location.label} selected. Save this location to use its forecast.`;
+            });
+            locationResults.appendChild(option);
+        });
+        locationResults.hidden = searchedLocations.length === 0;
+        if (searchedLocations.length > 0) {
+            weatherStatus.textContent = "Choose a matching city, then save it.";
+        } else {
+            weatherStatus.textContent = "No U.S. cities matched. Try a city and state, such as Duluth, Georgia.";
+        }
+    } catch (error) {
+        if (requestId !== locationSearchRequest) return;
+        console.error("Unable to search weather locations:", error);
+        weatherStatus.textContent = "Location search is unavailable. Check the Pi’s internet connection and try again.";
+    }
+}
+
+async function saveWeatherLocation() {
+    const selected = selectedLocationCandidate;
+    if (!selected) return;
+
+    weatherStatus.textContent = "Saving location…";
+    try {
+        const response = await fetch("/api/weather/location", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(selected)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Unable to save location");
+
+        selectedWeatherLocation = data.location;
+        clearWeatherLocationResults();
+        locationQuery.value = "";
+        weatherCache = null;
+        weatherCacheTime = 0;
+        setWeatherCardLocation(selectedWeatherLocation);
+        await loadWeatherForecast(true);
+    } catch (error) {
+        console.error("Unable to save weather location:", error);
+        weatherStatus.textContent = "Could not save this location. Please select a city from the results.";
+    }
+}
+
+function openWeather() {
+    weatherTrigger = document.activeElement;
+    weatherOverlay.hidden = false;
+    weatherPanel.focus();
+    if (selectedWeatherLocation) loadWeatherForecast();
+}
+
+function closeWeather() {
+    if (weatherOverlay.hidden) return;
+    weatherOverlay.hidden = true;
+    weatherTrigger?.focus();
 }
 
 function addChartElement(name, attributes, text) {
@@ -254,6 +497,33 @@ document.getElementById("temperatureCard").addEventListener("click", () => {
 document.getElementById("humidityCard").addEventListener("click", () => {
     openHistory("humidity");
 });
+weatherButton.addEventListener("click", openWeather);
+weatherClose.addEventListener("click", closeWeather);
+weatherOverlay.addEventListener("click", (event) => {
+    if (event.target === weatherOverlay) closeWeather();
+});
+locationSearchForm.addEventListener("submit", (event) => {
+event.preventDefault();
+const query = locationQuery.value.trim();
+clearTimeout(locationSearchTimer);
+if (query.length < 2) {
+    weatherStatus.textContent = "Enter at least two characters to search.";
+    clearWeatherLocationResults();
+    return;
+}
+searchWeatherLocations(query);
+});
+locationQuery.addEventListener("input", () => {
+clearTimeout(locationSearchTimer);
+clearWeatherLocationResults();
+const query = locationQuery.value.trim();
+if (query.length < 2) {
+    weatherStatus.textContent = "Enter a U.S. city and state to search.";
+    return;
+}
+locationSearchTimer = setTimeout(() => searchWeatherLocations(query), 350);
+});
+saveLocationButton.addEventListener("click", saveWeatherLocation);
 historyRangeButtons.forEach((button) => {
     button.addEventListener("click", () => {
         selectedHistoryRange = button.dataset.range;
@@ -271,9 +541,14 @@ historyOverlay.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeHistory();
+    if (event.key === "Escape") closeWeather();
     if (event.key === "Tab" && !historyOverlay.hidden) {
         event.preventDefault();
         historyClose.focus();
+    }
+    if (event.key === "Tab" && !weatherOverlay.hidden) {
+        event.preventDefault();
+        weatherClose.focus();
     }
 });
 
@@ -281,4 +556,5 @@ updateClock();
 setInterval(updateClock, 1000);
 updateSensorReadings();
 setInterval(updateSensorReadings, SENSOR_REFRESH_MS);
+loadSavedWeatherLocation();
 resetIdleTimer();

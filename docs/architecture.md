@@ -46,6 +46,8 @@ Current modules:
 
 The temperature and humidity cards read the BME280 over I2C through the `/api/sensors` endpoint. The dashboard refreshes these readings every 15 seconds and stores one reading every five minutes while open in a local SQLite database, retaining up to seven days. Tapping either card opens a graph with 24-hour and seven-day ranges. If the sensor cannot be detected, the cards show an unavailable status and Flask logs the reason.
 
+The OUTSIDE card opens a weather view backed by Open-Meteo. U.S. cities are searched through the geocoding API; the selected city, state, and coordinates are persisted in the local SQLite database. The forecast endpoint provides current conditions and a five-day outlook.
+
 ## Photo screensaver
 
 Photos remain on the Raspberry Pi in:
