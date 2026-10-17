@@ -185,12 +185,12 @@ Home Hub Dashboard
 Power off the Pi before connecting the sensor. Use the **physical pin numbers** on
 the 40-pin header:
 
-| BME280 breakout pin | Raspberry Pi 3 pin | Pi GPIO |
-|---|---:|---|
-| `VCC` or `VIN` | 1 | 3.3V |
-| `GND` | 6 | Ground |
-| `SDA` or `SDI` | 3 | GPIO 2 / SDA |
-| `SCL` or `SCK` | 5 | GPIO 3 / SCL |
+| BME280 breakout pin | Pi-side jumper wire | Raspberry Pi 3 pin | Pi GPIO |
+|---|---|---:|---|
+| `VCC` or `VIN` | Yellow | 1 | 3.3V |
+| `GND` | Green | 6 | Ground |
+| `SDA` or `SDI` | Blue | 3 | GPIO 2 / SDA |
+| `SCL` or `SCK` | Purple | 5 | GPIO 3 / SCL |
 
 Use 3.3V for power. Raspberry Pi GPIO pins are **not 5V tolerant**. Check the
 labels on your breakout board before connecting it.
