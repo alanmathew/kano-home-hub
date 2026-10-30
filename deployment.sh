@@ -45,6 +45,10 @@ fi
 echo "==> Installing dependencies"
 "$VENV_DIR/bin/pip" install -r requirements.txt
 
+if ! command -v ffmpeg >/dev/null 2>&1; then
+    echo "NOTICE: Luke’s View requires ffmpeg; install it with: sudo apt install ffmpeg"
+fi
+
 if systemctl list-unit-files 2>/dev/null | grep -q "^${SERVICE_NAME}\.service"; then
     echo "==> Restarting Home Hub service"
     sudo systemctl restart "$SERVICE_NAME"

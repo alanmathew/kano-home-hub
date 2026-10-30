@@ -1,10 +1,19 @@
 import math
+import shutil
 import sqlite3
+import subprocess
+import threading
 import time
 from pathlib import Path
-import math
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    send_from_directory,
+)
 
 from sensors.bme280 import BME280Sensor, SensorUnavailableError
 from services.weather import (
@@ -16,6 +25,7 @@ from services.weather import (
 app = Flask(__name__)
 
 PHOTO_DIR = Path.home() / "Pictures" / "PhotoFrame"
+CAMERA_DEVICE = Path("/dev/video0")
 SENSOR_HISTORY_DB = Path(__file__).resolve().parent / "data" / "sensor_history.db"
 SENSOR_HISTORY_SECONDS = 7 * 24 * 60 * 60
 SENSOR_SAMPLE_INTERVAL_SECONDS = 5 * 60
@@ -28,6 +38,7 @@ HISTORY_METRICS = {
     "humidity": ("humidity", "Humidity", "%"),
 }
 sensor = None
+camera_stream_lock = threading.Lock()
 
 
 def open_sensor_history_db():
@@ -251,6 +262,109 @@ def weather_forecast():
 @app.route("/family-photos/<path:filename>")
 def family_photo(filename):
     return send_from_directory(PHOTO_DIR, filename)
+
+
+@app.route("/camera-feed")
+def camera_feed():
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        return jsonify(
+            error="Camera streaming requires ffmpeg. Install it with: sudo apt install ffmpeg"
+        ), 503
+    if not CAMERA_DEVICE.exists():
+        return jsonify(error=f"USB camera not found at {CAMERA_DEVICE}."), 503
+    if not camera_stream_lock.acquire(blocking=False):
+        return jsonify(error="The camera is already in use by another viewer."), 409
+
+    try:
+        process = subprocess.Popen(
+            [
+                ffmpeg,
+                "-loglevel", "error",
+                "-f", "v4l2",
+                "-input_format", "yuyv422",
+                "-video_size", "640x480",
+                "-framerate", "15",
+                "-i", str(CAMERA_DEVICE),
+                "-an",
+                "-c:v", "mjpeg",
+                "-q:v", "6",
+                "-f", "mjpeg",
+                "pipe:1",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            bufsize=0,
+        )
+    except OSError:
+        camera_stream_lock.release()
+        app.logger.exception("Unable to start ffmpeg for the USB camera")
+        return jsonify(error="Unable to start camera streaming. Check ffmpeg and camera permissions."), 503
+
+    cleanup_lock = threading.Lock()
+    stream_closed = False
+
+    def close_stream():
+        nonlocal stream_closed
+        with cleanup_lock:
+            if stream_closed:
+                return
+            stream_closed = True
+            try:
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
+                process.stdout.close()
+            finally:
+                camera_stream_lock.release()
+
+    def generate_frames():
+        buffer = bytearray()
+        try:
+            while True:
+                chunk = process.stdout.read(4096)
+                if not chunk:
+                    break
+                buffer.extend(chunk)
+
+                while True:
+                    start = buffer.find(b"\xff\xd8")
+                    if start < 0:
+                        buffer[:] = buffer[-1:]
+                        break
+                    if start:
+                        del buffer[:start]
+                    end = buffer.find(b"\xff\xd9", 2)
+                    if end < 0:
+                        break
+
+                    frame = bytes(buffer[:end + 2])
+                    del buffer[:end + 2]
+                    yield (
+                        b"--frame\r\n"
+                        b"Content-Type: image/jpeg\r\n"
+                        b"Content-Length: " + str(len(frame)).encode("ascii") +
+                        b"\r\n\r\n" + frame + b"\r\n"
+                    )
+        finally:
+            close_stream()
+            if process.returncode not in (0, -15, -9):
+                app.logger.warning(
+                    "Camera stream process exited with status %s",
+                    process.returncode,
+                )
+
+    response = Response(
+        generate_frames(),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-store"},
+    )
+    response.call_on_close(close_stream)
+    return response
 
 
 if __name__ == "__main__":

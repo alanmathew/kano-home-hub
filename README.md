@@ -389,6 +389,17 @@ http://localhost:6001
 
 To open it from another device on the same network, use the network address printed by Flask, such as `http://10.0.0.98:6001`.
 
+The **Luke’s View** dashboard button displays the attached USB webcam as a live
+feed. Install `ffmpeg` on the Kano first:
+
+```bash
+sudo apt install ffmpeg
+```
+
+The stream uses `/dev/video0` at 640×480 and 15 fps, and stops when the camera
+view is closed. It is available to anyone who can access Home Hub on the local
+network; do not expose port 6001 to the public internet.
+
 ---
 
 # 🗂 Planned Project Structure

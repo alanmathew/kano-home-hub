@@ -607,6 +607,66 @@ h1 {
     font-size: 11px;
 }
 
+.camera-overlay {
+    position: fixed;
+    z-index: 1002;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(24, 35, 46, 0.7);
+}
+
+.camera-overlay[hidden] {
+    display: none;
+}
+
+.camera-panel {
+    width: min(100%, 900px);
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+}
+
+.camera-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.camera-header h2 {
+    margin: 5px 0 0;
+    font-size: 24px;
+}
+
+.camera-close {
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-weight: 700;
+}
+
+.camera-status,
+.camera-note {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.camera-feed {
+    display: block;
+    width: 100%;
+    max-height: min(65vh, 600px);
+    object-fit: contain;
+    background: #101820;
+}
+
 .signature {
     display: none;
 }
@@ -821,6 +881,14 @@ h1 {
 
     .weather-overlay {
         padding: 10px;
+    }
+
+    .camera-overlay {
+        padding: 10px;
+    }
+
+    .camera-panel {
+        padding: 16px 12px;
     }
 
     .weather-panel {

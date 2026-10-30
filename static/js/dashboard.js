@@ -23,6 +23,12 @@ const locationSearchForm = document.getElementById("locationSearchForm");
 const locationQuery = document.getElementById("locationQuery");
 const locationResults = document.getElementById("locationResults");
 const saveLocationButton = document.getElementById("saveLocationButton");
+const cameraButton = document.getElementById("cameraButton");
+const cameraOverlay = document.getElementById("cameraOverlay");
+const cameraPanel = document.getElementById("cameraPanel");
+const cameraClose = document.getElementById("cameraClose");
+const cameraFeed = document.getElementById("cameraFeed");
+const cameraStatus = document.getElementById("cameraStatus");
 const weatherStatus = document.getElementById("weatherStatus");
 const currentWeather = document.getElementById("currentWeather");
 const forecastHeading = document.getElementById("forecastHeading");
@@ -72,6 +78,7 @@ let historyTrigger = null;
 let selectedHistoryRange = "7d";
 let selectedWeatherLocation = null;
 let weatherTrigger = null;
+let cameraTrigger = null;
 let weatherCache = null;
 let weatherCacheTime = 0;
 let searchedLocations = [];
@@ -330,6 +337,21 @@ function closeWeather() {
     weatherTrigger?.focus();
 }
 
+function openCamera() {
+    cameraTrigger = document.activeElement;
+    cameraOverlay.hidden = false;
+    cameraPanel.focus();
+    cameraStatus.textContent = "Connecting to the USB camera…";
+    cameraFeed.src = `/camera-feed?started=${Date.now()}`;
+}
+
+function closeCamera() {
+    if (cameraOverlay.hidden) return;
+    cameraFeed.removeAttribute("src");
+    cameraOverlay.hidden = true;
+    cameraTrigger?.focus();
+}
+
 function addChartElement(name, attributes, text) {
     const element = document.createElementNS(SVG_NS, name);
     for (const [key, value] of Object.entries(attributes)) {
@@ -498,6 +520,17 @@ document.getElementById("humidityCard").addEventListener("click", () => {
     openHistory("humidity");
 });
 weatherButton.addEventListener("click", openWeather);
+cameraButton.addEventListener("click", openCamera);
+cameraClose.addEventListener("click", closeCamera);
+cameraFeed.addEventListener("load", () => {
+    cameraStatus.textContent = "Live camera";
+});
+cameraFeed.addEventListener("error", () => {
+    cameraStatus.textContent = "Camera unavailable. Check that ffmpeg is installed and the webcam is connected.";
+});
+cameraOverlay.addEventListener("click", (event) => {
+    if (event.target === cameraOverlay) closeCamera();
+});
 weatherClose.addEventListener("click", closeWeather);
 weatherOverlay.addEventListener("click", (event) => {
     if (event.target === weatherOverlay) closeWeather();
@@ -542,6 +575,7 @@ historyOverlay.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeHistory();
     if (event.key === "Escape") closeWeather();
+    if (event.key === "Escape") closeCamera();
     if (event.key === "Tab" && !historyOverlay.hidden) {
         event.preventDefault();
         historyClose.focus();
@@ -549,6 +583,10 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "Tab" && !weatherOverlay.hidden) {
         event.preventDefault();
         weatherClose.focus();
+    }
+    if (event.key === "Tab" && !cameraOverlay.hidden) {
+        event.preventDefault();
+        cameraClose.focus();
     }
 });
 
