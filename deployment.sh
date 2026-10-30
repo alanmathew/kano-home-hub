@@ -53,7 +53,32 @@ else
     echo "==> systemd service not configured yet"
     echo "==> Starting Flask in the background"
 
-    pkill -f "$REMOTE_DIR/app.py" 2>/dev/null || true
+    if ! command -v fuser >/dev/null 2>&1; then
+        echo "ERROR: fuser is required to safely clear port 6001." >&2
+        echo "Install it on the Kano with: sudo apt install psmisc" >&2
+        exit 1
+    fi
+
+    echo "==> Stopping any process listening on port 6001"
+    fuser -k -TERM 6001/tcp 2>/dev/null || true
+
+    for attempt in 1 2 3 4 5; do
+        if ! fuser 6001/tcp >/dev/null 2>&1; then
+            break
+        fi
+        sleep 1
+    done
+
+    if fuser 6001/tcp >/dev/null 2>&1; then
+        echo "==> Process did not stop; forcing it to exit"
+        fuser -k -KILL 6001/tcp 2>/dev/null || true
+        sleep 1
+    fi
+
+    if fuser 6001/tcp >/dev/null 2>&1; then
+        echo "ERROR: port 6001 is still in use; refusing to start another copy." >&2
+        exit 1
+    fi
 
     nohup "$VENV_DIR/bin/python" "$REMOTE_DIR/app.py" \
         > "$REMOTE_DIR/home-hub.log" 2>&1 &

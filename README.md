@@ -211,7 +211,10 @@ i2cdetect -y 1
 ```
 
 Deploy the app after wiring the sensor. The deployment script installs the
-Python dependencies from `requirements.txt` and restarts the Home Hub. The
+Python dependencies from `requirements.txt` and restarts the Home Hub. When
+systemd is not configured, it stops the process listening on port 6001 before
+starting Flask again; this fallback requires `fuser` (`sudo apt install
+psmisc` if it is missing). The
 temperature and humidity cards read the BME280 every 15 seconds. If the sensor
 is not detected, the cards show an unavailable status and the Flask log explains
 what to check.
